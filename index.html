@@ -1,0 +1,389 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta name="viewport"
+        content="width=device-width,
+                 initial-scale=1.0,
+                 maximum-scale=1.0,
+                 user-scalable=no">
+
+  <title>Paralel Levhalar - Elektrik Alanı</title>
+
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
+</head>
+
+<body style="margin:0; overflow:hidden; background:black;">
+
+<a-scene
+  embedded
+  renderer="antialias: true; colorManagement: true"
+  arjs="
+    sourceType: webcam;
+    debugUIEnabled: false;
+    trackingMethod: best;
+  ">
+
+  <a-marker preset="hiro">
+
+    <!-- POZİTİF LEVHA -->
+    <a-box
+      position="-1.45 0 0"
+      width="0.12"
+      height="2.6"
+      depth="3.2"
+      color="#d62828"
+      material="metalness:0.75; roughness:0.25;">
+    </a-box>
+
+    <a-box
+      position="-1.375 0 0"
+      width="0.025"
+      height="2.5"
+      depth="3.1"
+      color="#ff5252">
+    </a-box>
+
+    <!-- NEGATİF LEVHA -->
+    <a-box
+      position="1.45 0 0"
+      width="0.12"
+      height="2.6"
+      depth="3.2"
+      color="#1565c0"
+      material="metalness:0.75; roughness:0.25;">
+    </a-box>
+
+    <a-box
+      position="1.375 0 0"
+      width="0.025"
+      height="2.5"
+      depth="3.1"
+      color="#42a5f5">
+    </a-box>
+
+    <!-- LEVHA KENARLARI -->
+    <a-box position="-1.45 1.30 0"
+      width="0.16" height="0.08" depth="3.25"
+      color="#ff6b6b"></a-box>
+
+    <a-box position="-1.45 -1.30 0"
+      width="0.16" height="0.08" depth="3.25"
+      color="#ff6b6b"></a-box>
+
+    <a-box position="1.45 1.30 0"
+      width="0.16" height="0.08" depth="3.25"
+      color="#64b5f6"></a-box>
+
+    <a-box position="1.45 -1.30 0"
+      width="0.16" height="0.08" depth="3.25"
+      color="#64b5f6"></a-box>
+
+    <!-- LEVHALARIN ÜSTÜNDEKİ İŞARETLER -->
+    <a-text
+      value="POZİTİF (+)"
+      color="#ff5252"
+      align="center"
+      width="3"
+      position="-1.45 1.55 0">
+    </a-text>
+
+    <a-text
+      value="NEGATİF (-)"
+      color="#42a5f5"
+      align="center"
+      width="3"
+      position="1.45 1.55 0">
+    </a-text>
+
+    <!-- POZİTİF ETİKET -->
+    <a-entity position="-1.36 0 1.68">
+      <a-plane width="1.0" height="0.32"
+        color="#8b0000" opacity="0.95"></a-plane>
+      <a-text
+        value="POZİTİF (+)"
+        color="white"
+        align="center"
+        position="0 0 0.02"
+        width="3.5">
+      </a-text>
+    </a-entity>
+
+    <!-- NEGATİF ETİKET -->
+    <a-entity position="1.36 0 1.68">
+      <a-plane width="1.0" height="0.32"
+        color="#003c80" opacity="0.95"></a-plane>
+      <a-text
+        value="NEGATİF (-)"
+        color="white"
+        align="center"
+        position="0 0 0.02"
+        width="3.5">
+      </a-text>
+    </a-entity>
+
+    <!-- ELEKTRİK ALANI -->
+    <a-entity id="electricField"></a-entity>
+
+    <!-- ALAN ETİKETİ -->
+    <a-text
+      value="ELEKTRİK ALANI ÇİZGİLERİ"
+      color="#00ffff"
+      align="center"
+      width="2.5"
+      position="0 1.65 0">
+    </a-text>
+
+  </a-marker>
+
+  <a-entity camera></a-entity>
+
+</a-scene>
+
+
+<script>
+
+const field = document.querySelector("#electricField");
+
+
+// AYARLAR
+
+const leftPlate = -1.36;
+const rightPlate = 1.36;
+
+
+// VEKTÖR OKU OLUŞTURMA
+
+function createVectorArrow(position, direction, color, size=1){
+
+  const arrow = document.createElement("a-entity");
+
+  const arrowLeft = document.createElement("a-cylinder");
+  arrowLeft.setAttribute("radius", 0.0025);
+  arrowLeft.setAttribute("height", 0.12 * size);
+  arrowLeft.setAttribute("color", color);
+  arrowLeft.setAttribute("position", `-${0.035 * size} ${0.045 * size} 0`);
+  arrowLeft.setAttribute("rotation", "0 0 -45");
+
+  const arrowRight = document.createElement("a-cylinder");
+  arrowRight.setAttribute("radius", 0.0025);
+  arrowRight.setAttribute("height", 0.12 * size);
+  arrowRight.setAttribute("color", color);
+  arrowRight.setAttribute("position", `${0.035 * size} ${0.045 * size} 0`);
+  arrowRight.setAttribute("rotation", "0 0 45");
+
+  arrow.appendChild(arrowLeft);
+  arrow.appendChild(arrowRight);
+
+  arrow.setAttribute(
+    "position",
+    `${position.x} ${position.y} ${position.z}`
+  );
+
+  const quaternion = new THREE.Quaternion();
+
+  quaternion.setFromUnitVectors(
+    new THREE.Vector3(0,1,0),
+    direction.clone().normalize()
+  );
+
+  arrow.object3D.quaternion.copy(quaternion);
+
+  field.appendChild(arrow);
+}
+
+
+// ÇİZGİ OLUŞTURMA FONKSİYONU
+
+function drawLine(points, arrowCount=1) {
+
+  if(points.length < 2) return;
+
+  const geometry =
+    new THREE.BufferGeometry().setFromPoints(points);
+
+  const material =
+    new THREE.LineBasicMaterial({
+      color: "#ffff00",
+      transparent: true,
+      opacity: 0.9
+    });
+
+  const line = new THREE.Line(geometry, material);
+
+  field.object3D.add(line);
+
+
+  // OKLAR
+
+  for(let a=1; a<=arrowCount; a++){
+
+    const index = Math.floor(
+      (points.length-1) * a / (arrowCount+1)
+    );
+
+    const p1 = points[index-1];
+    const p2 = points[index];
+
+    const direction =
+      new THREE.Vector3()
+        .subVectors(p2,p1)
+        .normalize();
+
+    createVectorArrow(p2, direction, "yellow", 1);
+  }
+}
+
+
+// ==================================================
+// 1. LEVHALAR ARASINDAKİ DÜZ ÇİZGİLER
+// ==================================================
+
+const verticalLines = 7;
+const depthLines = 7;
+
+for(let i=0; i<verticalLines; i++){
+
+  const y = -1.05 + (2.1/(verticalLines-1))*i;
+
+  for(let j=0; j<depthLines; j++){
+
+    const z = -1.25 + (2.5/(depthLines-1))*j;
+
+    const points = [];
+
+    for(let k=0; k<=40; k++){
+
+      const t = k/40;
+
+      points.push(
+        new THREE.Vector3(
+          leftPlate + (rightPlate-leftPlate)*t,
+          y,
+          z
+        )
+      );
+    }
+
+    drawLine(points,1);
+  }
+}
+
+
+// ==================================================
+// 2. ÜSTTEN VE ALTTAN KIVRILAN ÇİZGİLER
+// ==================================================
+
+function createCurvedLine(z, side){
+
+  const points = [];
+
+  const segments = 70;
+
+  const height = 1.65;
+
+  for(let i=0; i<=segments; i++){
+
+    const t = i/segments;
+
+    const x =
+      leftPlate + (rightPlate-leftPlate)*t;
+
+    const curve =
+      height * Math.sin(Math.PI*t);
+
+    const y = side * (1.05 + curve);
+
+    points.push(
+      new THREE.Vector3(x,y,z)
+    );
+  }
+
+  drawLine(points,2);
+}
+
+
+// ÜST VE ALT KISIMDA DAĞILIM
+
+for(let z=-1.1; z<=1.1; z+=0.55){
+
+  createCurvedLine(z,1);
+
+  createCurvedLine(z,-1);
+}
+
+
+// ==================================================
+// 3. LEVHALARIN YANLARINDAN KIVRILAN ÇİZGİLER
+// ==================================================
+
+function createSideCurve(y, side){
+
+  const points = [];
+
+  const segments = 70;
+
+  for(let i=0; i<=segments; i++){
+
+    const t=i/segments;
+
+    const x =
+      leftPlate + (rightPlate-leftPlate)*t;
+
+    const curve =
+      1.65*Math.sin(Math.PI*t);
+
+    const z =
+      side*(1.25+curve);
+
+    points.push(
+      new THREE.Vector3(x,y,z)
+    );
+  }
+
+  drawLine(points,2);
+}
+
+
+for(let y=-0.65; y<=0.65; y+=0.65){
+
+  createSideCurve(y,1);
+
+  createSideCurve(y,-1);
+}
+
+
+// ==================================================
+// 4. MERKEZDE ELEKTRİK ALANI VEKTÖRÜ
+// ==================================================
+
+const centerDirection = new THREE.Vector3(1,0,0);
+
+createVectorArrow(
+  new THREE.Vector3(0,0,0),
+  centerDirection,
+  "#00ff00",
+  1.5
+);
+
+
+// E YAZISI
+
+const eText = document.createElement("a-text");
+
+eText.setAttribute("value","E");
+eText.setAttribute("color","#00ff00");
+eText.setAttribute("width","0.8");
+eText.setAttribute("align","center");
+eText.setAttribute("position","0 0.25 0");
+
+field.appendChild(eText);
+
+</script>
+
+</body>
+</html>
